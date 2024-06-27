@@ -1,56 +1,103 @@
+using System.Collections;
+using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
+    [Header("Movement")]
+    public float moveSpeed;
+    public float walkSpeed;
+    public float sprintSpeed;
+    public float groundDrag;
 
-    [SerializeField] CharacterController controller;
-    [SerializeField] PlayerInput playerInput;
-    public float sensitivityX;
-    public float sensitivityY;
-    //[SerializeField] Animator animator;
-    private Vector3 playerVelocity;
-    public bool groundedPlayer;
+    [Header("Keybinds")]
+    KeyCode sprintKey = KeyCode.LeftShift;
+    KeyCode crouchKey = KeyCode.C;
 
-    public float playerSpeed = 2.0f;
-    private float gravityValue = -9.81f;
 
-    private void Start()
+    [Header("Ground Check")]
+    public float playerHeight;
+    public LayerMask whatIsGround;
+    bool grounded;
+
+
+    [Header("Crouching")]
+    public float couchSpeed;
+    public float couchYScale;
+    public float startYScale;
+    public Transform orientation;
+
+    float horizontalInput;
+    float verticalInput;
+
+    Vector3 moveDirection;
+    [SerializeField] Rigidbody rigidBody;
+    void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        rigidBody.freezeRotation = true;
     }
+    public MovementState state;
+    public enum MovementState
+    {
+        walking, sprinting
+    }
+
+    void StateHandler()
+    {
+        if (grounded && Input.GetKey(sprintKey))
+        {
+            state = MovementState.sprinting;
+            moveSpeed = sprintSpeed;
+        }
+        else if (grounded)
+        {
+            state = MovementState.walking;
+            moveSpeed = walkSpeed;
+        }
+    }
+
 
     void Update()
     {
-        Move();
-        Look();
-    }
+        grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
 
-    private void Move()
-    {
+        MyInput();
+        SpeedControl();
+        StateHandler();
 
-        groundedPlayer = controller.isGrounded;
-        if (groundedPlayer && playerVelocity.y < 0)
+        if (grounded)
         {
-            playerVelocity.y = 0f;
+            rigidBody.drag = groundDrag;
+        }
+        else
+        {
+            rigidBody.drag = 0;
+        }
+    }
+    void FixedUpdate()
+    {
+        MovePlayer();
+    }
+    void MyInput()
+    {
+        horizontalInput = Input.GetAxisRaw("Horizontal");
+        verticalInput = Input.GetAxisRaw("Vertical");
+    }
+    void MovePlayer()
+    {
+        moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
+        rigidBody.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
+    }
+    void SpeedControl()
+    {
+        Vector3 flatVelocity = new Vector3(rigidBody.velocity.x, 0f, rigidBody.velocity.z);
+        if (flatVelocity.magnitude > moveSpeed)
+        {
+            Vector3 limitedVelocity = flatVelocity.normalized * moveSpeed;
+            rigidBody.velocity = new Vector3(limitedVelocity.x, rigidBody.velocity.y, limitedVelocity.z);
         }
 
-        Vector2 movementInput = playerInput.actions["Movement"].ReadValue<Vector2>();
-        Vector3 move = new Vector3(movementInput.x, 0, movementInput.y);
-        controller.Move(move * Time.deltaTime * playerSpeed);
-
-        if (move != Vector3.zero)
-        {
-            gameObject.transform.forward = move;
-        }
-
-        // Changes the height position of the player..
     }
-    void Look()
-    {
-        float mouseX = Input.GetAxisRaw("MouseX") * Time.deltaTime * sensitivityX;
-    }
-
 }
-
