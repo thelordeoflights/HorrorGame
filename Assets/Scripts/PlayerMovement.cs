@@ -24,7 +24,7 @@ public class PlayerMovement : MonoBehaviour
 
 
     [Header("Crouching")]
-    public float couchSpeed;
+    public float crouchSpeed;
     public float couchYScale;
     public float startYScale;
     public Transform orientation;
@@ -37,11 +37,13 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         rigidBody.freezeRotation = true;
+
+        startYScale = transform.localScale.y;
     }
     public MovementState state;
     public enum MovementState
     {
-        walking, sprinting
+        walking, sprinting, crouching
     }
 
     void StateHandler()
@@ -56,6 +58,12 @@ public class PlayerMovement : MonoBehaviour
             state = MovementState.walking;
             moveSpeed = walkSpeed;
         }
+        if (Input.GetKey(crouchKey))
+        {
+            state = MovementState.crouching;
+            moveSpeed = crouchSpeed;
+        }
+
     }
 
 
@@ -84,6 +92,16 @@ public class PlayerMovement : MonoBehaviour
     {
         horizontalInput = Input.GetAxisRaw("Horizontal");
         verticalInput = Input.GetAxisRaw("Vertical");
+
+        if (Input.GetKeyDown(crouchKey))
+        {
+            transform.localScale = new Vector3(transform.localScale.x, couchYScale, transform.localScale.z);
+            rigidBody.AddForce(Vector3.down * 5f, ForceMode.Impulse);
+        }
+        if (Input.GetKeyUp(crouchKey))
+        {
+            transform.localScale = new Vector3(transform.localScale.x, startYScale, transform.localScale.z);
+        }
     }
     void MovePlayer()
     {

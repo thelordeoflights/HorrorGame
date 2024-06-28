@@ -202,11 +202,13 @@ MonoBehaviour:
   walkSpeed: 7
   sprintSpeed: 10
   groundDrag: 5
-  sprintKey: 304
   playerHeight: 2
   whatIsGround:
     serializedVersion: 2
     m_Bits: 64
+  crouchSpeed: 3.5
+  couchYScale: 0.5
+  startYScale: 1
   orientation: {fileID: 922697454}
   rigidBody: {fileID: 391045690}
   state: 0
